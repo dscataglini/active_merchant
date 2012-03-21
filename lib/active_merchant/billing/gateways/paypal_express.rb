@@ -49,34 +49,20 @@ module ActiveMerchant #:nodoc:
 
       private
       def build_get_details_request(token)
-        xml = Builder::XmlMarkup.new :indent => 2
-        xml.tag! 'GetExpressCheckoutDetailsReq', 'xmlns' => PAYPAL_NAMESPACE do
-          xml.tag! 'GetExpressCheckoutDetailsRequest', 'xmlns:n2' => EBAY_NAMESPACE do
-            xml.tag! 'n2:Version', API_VERSION
-            xml.tag! 'Token', token
-          end
+        build_request_wrapper('GetExpressCheckoutDetails') do |xml|
+          xml.tag! 'Token', token
         end
-
-        xml.target!
       end
       
       def build_sale_or_authorization_request(action, money, options)
         currency_code = options[:currency] || currency(money)
         
-        xml = Builder::XmlMarkup.new :indent => 2
-        xml.tag! 'DoExpressCheckoutPaymentReq', 'xmlns' => PAYPAL_NAMESPACE do
-          xml.tag! 'DoExpressCheckoutPaymentRequest', 'xmlns:n2' => EBAY_NAMESPACE do
-            xml.tag! 'n2:Version', API_VERSION
-            xml.tag! 'n2:DoExpressCheckoutPaymentRequestDetails' do
-              xml.tag! 'n2:PaymentAction', action
-              xml.tag! 'n2:Token', options[:token]
-              xml.tag! 'n2:PayerID', options[:payer_id]
-              add_payment_details(xml, money, currency_code, options)
-            end
-          end
+        build_request_wrapper('GetExpressCheckoutDetails', :request_details => true) do |xml|
+          xml.tag! 'n2:PaymentAction', action
+          xml.tag! 'n2:Token', options[:token]
+          xml.tag! 'n2:PayerID', options[:payer_id]
+          add_payment_details(xml, money, currency_code, options)
         end
-
-        xml.target!
       end
 
       def build_setup_request(action, money, options)
@@ -86,11 +72,7 @@ module ActiveMerchant #:nodoc:
         options[:shipping_address] ||= options[:address]
         money = 100 if amount(money).to_f.zero?
         
-        xml = Builder::XmlMarkup.new :indent => 2
-        xml.tag! 'SetExpressCheckoutReq', 'xmlns' => PAYPAL_NAMESPACE do
-          xml.tag! 'SetExpressCheckoutRequest', 'xmlns:n2' => EBAY_NAMESPACE do
-            xml.tag! 'n2:Version', API_VERSION
-            xml.tag! 'n2:SetExpressCheckoutRequestDetails' do
+        build_request_wrapper('SetExpressCheckout', :request_details => true) do |xml|
               xml.tag! 'n2:ReturnURL', options[:return_url]
               xml.tag! 'n2:CancelURL', options[:cancel_return_url]
               if options[:max_amount]
@@ -138,11 +120,8 @@ module ActiveMerchant #:nodoc:
 
               xml.tag! 'n2:CallbackTimeout', options[:callback_timeout] unless options[:callback_timeout].blank?
               xml.tag! 'n2:CallbackVersion', options[:callback_version] unless options[:callback_version].blank?
-            end
-          end
         end
 
-        xml.target!
       end
       
       def build_reference_transaction_request(action, money, options)
@@ -151,21 +130,13 @@ module ActiveMerchant #:nodoc:
         # I am not sure why it's set like this for express gateway
         # but I don't want to break the existing behavior
         money = 100 if amount(money).to_f.zero?
-        xml = Builder::XmlMarkup.new :indent => 2
-        xml.tag! 'DoReferenceTransactionReq', 'xmlns' => PAYPAL_NAMESPACE do
-          xml.tag! 'DoReferenceTransactionRequest', 'xmlns:n2' => EBAY_NAMESPACE do
-            xml.tag! 'n2:Version', API_VERSION
-            xml.tag! 'n2:DoReferenceTransactionRequestDetails' do
+        build_request_wrapper('SetExpressCheckout', :request_details => true) do |xml|
               xml.tag! 'n2:ReferenceID', options[:reference_id]
               xml.tag! 'n2:PaymentAction', action
               xml.tag! 'n2:PaymentType', options[:payment_type] || 'Any'
               add_payment_details(xml, money, currency_code, options)
               xml.tag! 'n2:IPAddress', options[:ip]
-            end
-          end
         end
-
-        xml.target!
       end
 
       def build_response(success, message, response, options = {})

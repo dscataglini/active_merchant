@@ -118,11 +118,7 @@ commit 'ManageRecurringPaymentsProfileStatus', build_manage_profile_request(prof
         raise ArgumentError.new("Missing required parameter: #{field_name}") if field.blank?
       end
       def build_create_profile_request(options)
-        xml = Builder::XmlMarkup.new :indent => 2
-        xml.tag! 'CreateRecurringPaymentsProfileReq', 'xmlns' => PAYPAL_NAMESPACE do
-          xml.tag! 'CreateRecurringPaymentsProfileRequest', 'xmlns:n2' => EBAY_NAMESPACE do
-            xml.tag! 'n2:Version', API_VERSION
-            xml.tag! 'n2:CreateRecurringPaymentsProfileRequestDetails' do
+        build_request_wrapper('CreateRecurringPaymentsProfile', :request_details => true) do |xml|
               xml.tag! 'Token', options[:token] unless options[:token].blank?
               if options[:credit_card]
                 add_credit_card(xml, options[:credit_card], (options[:billing_address] || options[:address]), options)
@@ -160,29 +156,17 @@ commit 'ManageRecurringPaymentsProfileStatus', build_manage_profile_request(prof
                 xml.tag! 'n2:MaxFailedPayments', options[:max_failed_payments] unless options[:max_failed_payments].blank?
                 xml.tag! 'n2:AutoBillOutstandingAmount', options[:auto_bill_outstanding] ? 'AddToNextBilling' : 'NoAutoBill'
               end
-            end
-          end
         end
-        xml.target!
       end
 
       def build_get_profile_details_request(profile_id)
-        xml = Builder::XmlMarkup.new :indent => 2
-        xml.tag! 'GetRecurringPaymentsProfileDetailsReq', 'xmlns' => PAYPAL_NAMESPACE do
-          xml.tag! 'GetRecurringPaymentsProfileDetailsRequest', 'xmlns:n2' => EBAY_NAMESPACE do
-            xml.tag! 'n2:Version', API_VERSION
-            xml.tag! 'ProfileID', profile_id
-          end
+        build_request_wrapper('GetRecurringPaymentsProfileDetails', :request_details => true) do |xml|
+          xml.tag! 'ProfileID', profile_id
         end
-        xml.target!
       end
 
       def build_change_profile_request(profile_id, options)
-        xml = Builder::XmlMarkup.new :indent => 2
-        xml.tag! 'UpdateRecurringPaymentsProfileReq', 'xmlns' => PAYPAL_NAMESPACE do
-          xml.tag! 'UpdateRecurringPaymentsProfileRequest', 'xmlns:n2' => EBAY_NAMESPACE do
-            xml.tag! 'n2:Version', API_VERSION
-            xml.tag! 'n2:UpdateRecurringPaymentsProfileRequestDetails' do
+        build_request_wrapper('UpdateRecurringPaymentsProfile', :request_details => true) do |xml|
               xml.tag! 'ProfileID', profile_id
               if options[:credit_card]
                 add_credit_card(xml, options[:credit_card], options[:address], options)
@@ -202,42 +186,25 @@ commit 'ManageRecurringPaymentsProfileStatus', build_manage_profile_request(prof
               if options.has_key?(:start_date)
                 xml.tag! 'n2:BillingStartDate', (options[:start_date].is_a?(Date) ? options[:start_date].to_time : options[:start_date]).utc.iso8601
               end
-            end
-          end
         end
-        xml.target!
       end
 
       def build_manage_profile_request(profile_id, action, options)
-        xml = Builder::XmlMarkup.new :indent => 2
-        xml.tag! 'ManageRecurringPaymentsProfileStatusReq', 'xmlns' => PAYPAL_NAMESPACE do
-          xml.tag! 'ManageRecurringPaymentsProfileStatusRequest', 'xmlns:n2' => EBAY_NAMESPACE do
-            xml.tag! 'n2:Version', API_VERSION
-            xml.tag! 'n2:ManageRecurringPaymentsProfileStatusRequestDetails' do
-              xml.tag! 'ProfileID', profile_id
-              xml.tag! 'n2:Action', action
-              xml.tag! 'n2:Note', options[:note] unless options[:note].blank?
-            end
-          end
+        build_request_wrapper('ManageRecurringPaymentsProfileStatus', :request_details => true) do |xml|
+          xml.tag! 'ProfileID', profile_id
+          xml.tag! 'n2:Action', action
+          xml.tag! 'n2:Note', options[:note] unless options[:note].blank?
         end
-        xml.target!
       end
 
       def build_bill_outstanding_amount(profile_id, options)
-        xml = Builder::XmlMarkup.new :indent => 2
-        xml.tag! 'BillOutstandingAmountReq', 'xmlns' => PAYPAL_NAMESPACE do
-          xml.tag! 'BillOutstandingAmountRequest', 'xmlns:n2' => EBAY_NAMESPACE do
-            xml.tag! 'n2:Version', API_VERSION
-            xml.tag! 'n2:BillOutstandingAmountRequestDetails' do
-              xml.tag! 'ProfileID', profile_id
-              if options.has_key?(:amount)
-                xml.tag! 'n2:Amount', amount(options[:amount]), 'currencyID' => options[:currency] || 'USD'
-              end
-              xml.tag! 'n2:Note', options[:note] unless options[:note].blank?
-            end
+        build_request_wrapper('BillOutstandingAmount', :request_details => true) do |xml|
+          xml.tag! 'ProfileID', profile_id
+          if options.has_key?(:amount)
+            xml.tag! 'n2:Amount', amount(options[:amount]), 'currencyID' => options[:currency] || 'USD'
           end
+          xml.tag! 'n2:Note', options[:note] unless options[:note].blank?
         end
-        xml.target!
       end
 
     end

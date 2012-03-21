@@ -136,89 +136,54 @@ module ActiveMerchant #:nodoc:
       end
 
       def build_reauthorize_request(money, authorization, options)
-        xml = Builder::XmlMarkup.new
-        
-        xml.tag! 'DoReauthorizationReq', 'xmlns' => PAYPAL_NAMESPACE do
-          xml.tag! 'DoReauthorizationRequest', 'xmlns:n2' => EBAY_NAMESPACE do
-            xml.tag! 'n2:Version', API_VERSION
-            xml.tag! 'AuthorizationID', authorization
-            xml.tag! 'Amount', amount(money), 'currencyID' => options[:currency] || currency(money)
-          end
+        build_request_wrapper('DoReauthorization') do |xml|
+          xml.tag! 'AuthorizationID', authorization
+          xml.tag! 'Amount', amount(money), 'currencyID' => options[:currency] || currency(money)
         end
-
-        xml.target!        
       end
           
-      def build_capture_request(money, authorization, options)   
-        xml = Builder::XmlMarkup.new
-        
-        xml.tag! 'DoCaptureReq', 'xmlns' => PAYPAL_NAMESPACE do
-          xml.tag! 'DoCaptureRequest', 'xmlns:n2' => EBAY_NAMESPACE do
-            xml.tag! 'n2:Version', API_VERSION
-            xml.tag! 'AuthorizationID', authorization
-            xml.tag! 'Amount', amount(money), 'currencyID' => options[:currency] || currency(money)
-            xml.tag! 'CompleteType', 'Complete'
-            xml.tag! 'InvoiceID', options[:order_id] unless options[:order_id].blank?
-            xml.tag! 'Note', options[:description]
-          end
+      def build_capture_request(money, authorization, options)
+        build_request_wrapper('DoCapture') do |xml|
+          xml.tag! 'AuthorizationID', authorization
+          xml.tag! 'Amount', amount(money), 'currencyID' => options[:currency] || currency(money)
+          xml.tag! 'CompleteType', 'Complete'
+          xml.tag! 'InvoiceID', options[:order_id] unless options[:order_id].blank?
+          xml.tag! 'Note', options[:description]
         end
-
-        xml.target!        
       end
       
       def build_refund_request(money, identification, options)
-        xml = Builder::XmlMarkup.new
-            
-        xml.tag! 'RefundTransactionReq', 'xmlns' => PAYPAL_NAMESPACE do
-          xml.tag! 'RefundTransactionRequest', 'xmlns:n2' => EBAY_NAMESPACE do
-            xml.tag! 'n2:Version', API_VERSION
-            xml.tag! 'TransactionID', identification
-            xml.tag! 'Amount', amount(money), 'currencyID' => options[:currency] || currency(money)
-            xml.tag! 'RefundType', 'Partial'
-            xml.tag! 'Memo', options[:note] unless options[:note].blank?
-          end
+        build_request_wrapper('RefundTransaction') do |xml|
+          xml.tag! 'TransactionID', identification
+          xml.tag! 'Amount', amount(money), 'currencyID' => options[:currency] || currency(money)
+          xml.tag! 'RefundType', 'Partial'
+          xml.tag! 'Memo', options[:note] unless options[:note].blank?
         end
-      
-        xml.target!        
       end
       
       def build_void_request(authorization, options)
-        xml = Builder::XmlMarkup.new
-        
-        xml.tag! 'DoVoidReq', 'xmlns' => PAYPAL_NAMESPACE do
-          xml.tag! 'DoVoidRequest', 'xmlns:n2' => EBAY_NAMESPACE do
-            xml.tag! 'n2:Version', API_VERSION
-            xml.tag! 'AuthorizationID', authorization
-            xml.tag! 'Note', options[:description]
-          end
+        build_request_wrapper('DoVoid') do |xml|
+          xml.tag! 'AuthorizationID', authorization
+          xml.tag! 'Note', options[:description]
         end
-
-        xml.target!        
       end
-      
+
       def build_mass_pay_request(*args)   
         default_options = args.last.is_a?(Hash) ? args.pop : {}
         recipients = args.first.is_a?(Array) ? args : [args]
-        
-        xml = Builder::XmlMarkup.new
-        
-        xml.tag! 'MassPayReq', 'xmlns' => PAYPAL_NAMESPACE do
-          xml.tag! 'MassPayRequest', 'xmlns:n2' => EBAY_NAMESPACE do
-            xml.tag! 'n2:Version', API_VERSION
-            xml.tag! 'EmailSubject', default_options[:subject] if default_options[:subject]
-            recipients.each do |money, recipient, options|
-              options ||= default_options
-              xml.tag! 'MassPayItem' do
-                xml.tag! 'ReceiverEmail', recipient
-                xml.tag! 'Amount', amount(money), 'currencyID' => options[:currency] || currency(money)
-                xml.tag! 'Note', options[:note] if options[:note]
-                xml.tag! 'UniqueId', options[:unique_id] if options[:unique_id]
-              end
+
+        build_request_wrapper('MassPay') do |xml|
+          xml.tag! 'EmailSubject', default_options[:subject] if default_options[:subject]
+          recipients.each do |money, recipient, options|
+            options ||= default_options
+            xml.tag! 'MassPayItem' do
+              xml.tag! 'ReceiverEmail', recipient
+              xml.tag! 'Amount', amount(money), 'currencyID' => options[:currency] || currency(money)
+              xml.tag! 'Note', options[:note] if options[:note]
+              xml.tag! 'UniqueId', options[:unique_id] if options[:unique_id]
             end
           end
         end
-        
-        xml.target!
       end
 
       def parse(action, xml)
