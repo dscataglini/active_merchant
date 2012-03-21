@@ -130,7 +130,7 @@ module ActiveMerchant #:nodoc:
         # I am not sure why it's set like this for express gateway
         # but I don't want to break the existing behavior
         money = 100 if amount(money).to_f.zero?
-        build_request_wrapper('SetExpressCheckout', :request_details => true) do |xml|
+        build_request_wrapper('DoReferenceTransaction', :request_details => true) do |xml|
               xml.tag! 'n2:ReferenceID', options[:reference_id]
               xml.tag! 'n2:PaymentAction', action
               xml.tag! 'n2:PaymentType', options[:payment_type] || 'Any'
